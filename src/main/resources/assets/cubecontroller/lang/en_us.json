@@ -1,0 +1,27 @@
+{
+  "cubecontroller.commands.error.registryNotFound": "Registry not found",
+  "cubecontroller.commands.error.doesNotHaveEvent": "%s does not have an event",
+  "cubecontroller.commands.error.notValueBased": "%s is not value based",
+  "cubecontroller.commands.error.nothingChanged": "%s data was not changed",
+  "cubecontroller.commands.set.enabled": "%s is now %s",
+  "cubecontroller.commands.set.value": "%s value has been set to %s",
+  "cubecontroller.commands.set.nbtData": "%s data has been modified.",
+  "cubecontroller.commands.get.enabled": "%s is %s",
+  "cubecontroller.commands.get.value": "%s value is %s",
+  "cubecontroller.commands.get.nbtData": "%s data: %s",
+  "cubecontroller.commands.invoke": "Invoking event for %s",
+  "cubecontroller.text.enabled.true": "enabled",
+  "cubecontroller.text.enabled.false": "disabled",
+
+  "cubecontroller.player_jump": "Player jump",
+  "cubecontroller.entity_jump": "Entity jump",
+  "cubecontroller.player_movement_speed": "Player movement speed",
+  "cubecontroller.player_speed_attribute": "Player speed attribute",
+  "cubecontroller.entity_speed_attribute": "Entity speed attribute",
+  "cubecontroller.player_health_attribute": "Player health attribute",
+  "cubecontroller.entity_health_attribute": "Entity health attribute",
+  "cubecontroller.potion_chaos": "Potion chaos",
+  "cubecontroller.inventory_shuffle": "Inventory shuffle",
+  "cubecontroller.rotate_player": "Rotate player",
+  "cubecontroller.floating_items": "Floating items"
+}
