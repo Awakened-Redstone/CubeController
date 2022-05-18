@@ -12,10 +12,10 @@ public class GameControl {
     private final Identifier identifier;
     private final Event<CubeControllerEvents> event;
     private final boolean valueBased;
-    private final NbtCompound nbtData;
 
-    public double value = 0;
-    public boolean enabled = false;
+    private double value = 0;
+    private boolean enabled = false;
+    private NbtCompound nbtData;
 
     public GameControl(@NotNull Identifier identifier) {
         this(identifier, CubeControllerEvents.NONE, true);
@@ -33,7 +33,23 @@ public class GameControl {
         this.identifier = identifier;
         this.event = event;
         this.valueBased = valueBased;
-        nbtData = nbt;
+        this.nbtData = nbt;
+    }
+
+    public double value() {
+        return value;
+    }
+
+    public void value(double value) {
+        this.value = value;
+    }
+
+    public boolean enabled() {
+        return enabled;
+    }
+
+    public void enabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public Identifier identifier() {
@@ -53,7 +69,11 @@ public class GameControl {
         return nbtData;
     }
 
-    public void trigger() {
+    public void nbtData(NbtCompound nbt) {
+        nbtData = nbt;
+    }
+
+    public void invoke() {
         event.invoker().invoke();
     }
 

@@ -51,6 +51,11 @@ public class GameControlCommand {
                                         .then(argument("nbt", NbtCompoundArgumentType.nbtCompound())
                                                 .executes(context -> executeSetData(context.getSource(),
                                                         RegistryEntryArgumentType.getRegistryValue(context, "gameControl", GameControl.class),
+                                                        NbtCompoundArgumentType.getNbtCompound(context, "nbt")))))
+                                .then(literal("dataRaw")
+                                        .then(argument("nbt", NbtCompoundArgumentType.nbtCompound())
+                                                .executes(context -> executeSetDataRaw(context.getSource(),
+                                                        RegistryEntryArgumentType.getRegistryValue(context, "gameControl", GameControl.class),
                                                         NbtCompoundArgumentType.getNbtCompound(context, "nbt"))))))
                         .then(literal("invoke")
                                 .executes(source -> executeInvoke(source.getSource(), RegistryEntryArgumentType.getRegistryValue(source, "gameControl", GameControl.class))))
@@ -59,54 +64,67 @@ public class GameControlCommand {
     }
 
     public static int executeSetEnabled(ServerCommandSource source, GameControl control, boolean enabled) {
-        control.enabled = enabled;
-        sendFeedback(source, "cubecontroller.commands.set.enabled", control, true, new TranslatableText("cubecontroller.text.enabled." + enabled));
+        control.enabled(enabled);
+        sendFeedback(source, "commands.cubecontroller.set.enabled", control, true, new TranslatableText("text.cubecontroller.enabled." + enabled));
+        CubeController.getCubeData().markDirty();
         return 0;
     }
 
     public static int executeGetEnabled(ServerCommandSource source, GameControl control) {
-        sendFeedback(source, "cubecontroller.commands.get.enabled", control, false, new TranslatableText("cubecontroller.text.enabled." + control.enabled));
+        sendFeedback(source, "commands.cubecontroller.get.enabled", control, false, new TranslatableText("text.cubecontroller.enabled." + control.enabled()));
         return 0;
     }
 
     public static int executeSetValue(ServerCommandSource source, GameControl control, double value) throws CommandSyntaxException {
         if (!control.valueBased()) {
-            throw createCommandException("cubecontroller.commands.error.notValueBased", control);
+            throw createCommandException("commands.cubecontroller.error.notValueBased", control);
         }
-        control.value = value;
-        sendFeedback(source, "cubecontroller.commands.set.value", control, true, value);
+        control.value(value);
+        sendFeedback(source, "commands.cubecontroller.set.value", control, true, value);
+        CubeController.getCubeData().markDirty();
         return 0;
     }
 
     public static int executeGetValue(ServerCommandSource source, GameControl control) {
         if (!control.valueBased())
-            sendFeedback(source, "cubecontroller.commands.error.notValueBased", control, false, control.value);
-        else sendFeedback(source, "cubecontroller.commands.get.value", control, false, control.value);
+            sendFeedback(source, "commands.cubecontroller.error.notValueBased", control, false, control.value());
+        else sendFeedback(source, "commands.cubecontroller.get.value", control, false, control.value());
         return 0;
     }
 
     public static int executeSetData(ServerCommandSource source, GameControl control, NbtCompound nbt) throws CommandSyntaxException {
         NbtCompound nbtCompound = control.nbtData().copy().copyFrom(nbt);
         if (control.nbtData().equals(nbtCompound)) {
-            throw createCommandException("cubecontroller.commands.error.nothingChanged", control);
+            throw createCommandException("commands.cubecontroller.error.nothingChanged", control);
         }
         control.nbtData().copyFrom(nbt);
-        sendFeedback(source, "cubecontroller.commands.set.nbtData", control, true);
+        sendFeedback(source, "commands.cubecontroller.set.nbtData", control, true);
+        CubeController.getCubeData().markDirty();
+        return 0;
+    }
+
+    public static int executeSetDataRaw(ServerCommandSource source, GameControl control, NbtCompound nbt) throws CommandSyntaxException {
+        NbtCompound nbtCompound = control.nbtData().copy().copyFrom(nbt);
+        if (control.nbtData().equals(nbtCompound)) {
+            throw createCommandException("commands.cubecontroller.error.nothingChanged", control);
+        }
+        control.nbtData(nbt);
+        sendFeedback(source, "commands.cubecontroller.set.nbtData", control, true);
+        CubeController.getCubeData().markDirty();
         return 0;
     }
 
     public static int executeGetData(ServerCommandSource source, GameControl control) {
-        sendNbtFeedback(source, "cubecontroller.commands.get.nbtData", control, true, control.nbtData());
+        sendNbtFeedback(source, "commands.cubecontroller.get.nbtData", control, true, control.nbtData());
         return 0;
     }
 
     public static int executeInvoke(ServerCommandSource source, GameControl control) throws CommandSyntaxException {
         if (control.event() == CubeControllerEvents.NONE) {
-            throw createCommandException("cubecontroller.commands.error.doesNotHaveEvent", control);
+            throw createCommandException("commands.cubecontroller.error.doesNotHaveEvent", control);
         }
-        control.event().invoker().invoke();
-        sendFeedback(source, "cubecontroller.commands.invoke", control, true);
-        source.sendFeedback(new TranslatableText("cubecontroller.commands.invoke", CubeController.getIdentifierTranslation(control.identifier())), true);
+        control.invoke();
+        sendFeedback(source, "commands.cubecontroller.invoke", control, true);
         return 0;
     }
 

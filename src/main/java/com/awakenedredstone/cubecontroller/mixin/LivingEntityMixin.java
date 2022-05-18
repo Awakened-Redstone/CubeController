@@ -41,44 +41,23 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Inject(method = "jump", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;setVelocity(DDD)V", shift = At.Shift.AFTER))
     private void jump(CallbackInfo ci) {
-        if (this.isPlayer()) {
-            GameControl playerJump = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "player_jump"));
-            if (playerJump.enabled) {
-                this.addVelocity(0, playerJump.value * 0.1f, 0);
-            }
-        }
-
-        GameControl entityJump = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "entity_jump"));
-        if (entityJump.enabled) {
-                this.addVelocity(0, entityJump.value * 0.1f, 0);
+        GameControl jump = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "entity_jump"));
+        if (jump.enabled() && (this.isPlayer() || !jump.nbtData().getBoolean("playerOnly"))) {
+                this.addVelocity(0, jump.value() * 0.1f, 0);
         }
     }
 
     @Inject(method = "getAttributeValue", at = @At("HEAD"), cancellable = true)
     public final void getAttributeValue(EntityAttribute attribute, CallbackInfoReturnable<Double> cir) {
-        if (this.isPlayer()) {
-            GameControl health = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "player_health_attribute"));
-            GameControl speed = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "player_speed_attribute"));
-
-            if (attribute == EntityAttributes.GENERIC_MAX_HEALTH && health.enabled) {
-                double newHealth = this.getAttributes().getValue(attribute) + health.value;
-                if (this.getHealth() > newHealth) this.dataTracker.set(HEALTH, MathHelper.clamp(this.getHealth(), 0.0f, ConversionUtils.toFloat(newHealth)));
-                cir.setReturnValue(newHealth);
-            } else if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && speed.enabled) {
-                double newSpeed = this.getAttributes().getValue(attribute) * speed.value;
-                cir.setReturnValue(newSpeed);
-            }
-        }
-
         GameControl health = CubeController.getControlSafe(identifier("entity_health_attribute"));
         GameControl speed = CubeController.getControlSafe(identifier("entity_speed_attribute"));
 
-        if (attribute == EntityAttributes.GENERIC_MAX_HEALTH && health.enabled) {
-            double newHealth = this.getAttributes().getValue(attribute) + health.value;
+        if (attribute == EntityAttributes.GENERIC_MAX_HEALTH && health.enabled() && (this.isPlayer() || !health.nbtData().getBoolean("playerOnly"))) {
+            double newHealth = this.getAttributes().getValue(attribute) + health.value();
             if (this.getHealth() > newHealth) this.dataTracker.set(HEALTH, MathHelper.clamp(this.getHealth(), 0.0f, ConversionUtils.toFloat(newHealth)));
             cir.setReturnValue(newHealth);
-        } else if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && speed.enabled) {
-            double newSpeed = this.getAttributes().getValue(attribute) * speed.value;
+        } else if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && speed.enabled() && (this.isPlayer() || !speed.nbtData().getBoolean("playerOnly"))) {
+            double newSpeed = this.getAttributes().getValue(attribute) * speed.value();
             cir.setReturnValue(newSpeed);
         }
     }

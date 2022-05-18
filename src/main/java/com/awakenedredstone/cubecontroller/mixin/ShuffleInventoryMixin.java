@@ -6,7 +6,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
@@ -17,9 +16,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.Random;
-import java.util.Stack;
 
 /**
  * @author TechnoAlli3
@@ -48,8 +44,8 @@ public abstract class ShuffleInventoryMixin extends LivingEntity {
     @Inject(method = "tick", at = @At("TAIL"))
     private void shuffleInventory(CallbackInfo ci) {
         GameControl inventoryShuffle = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "inventory_shuffle"));
-        if (!inventoryShuffle.enabled || inventoryShuffle.value <= 0 || inventory.isEmpty() || getEntityWorld().isClient) return;
-        if (shuffleCooldown++ >= inventoryShuffle.value) {
+        if (!inventoryShuffle.enabled() || inventoryShuffle.value() <= 0 || inventory.isEmpty() || getEntityWorld().isClient) return;
+        if (shuffleCooldown++ >= inventoryShuffle.value()) {
             int size = inventoryShuffle.nbtData().getBoolean("shuffleEverything") ? inventory.size() : inventory.main.size();
             shuffleCooldown = 0;
 

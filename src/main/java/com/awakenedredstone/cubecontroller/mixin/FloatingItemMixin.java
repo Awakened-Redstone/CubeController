@@ -19,7 +19,7 @@ public abstract class FloatingItemMixin {
 
     @Inject(method="tick", at=@At("TAIL"))
     private void FloatItem(CallbackInfo ci) {
-        if(((Entity)(Object)this) instanceof ItemEntity item && CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "floating_items")).enabled) {
+        if(((Entity)(Object)this) instanceof ItemEntity item && CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "floating_items")).enabled()) {
             item.setNoGravity(true);
         }
     }

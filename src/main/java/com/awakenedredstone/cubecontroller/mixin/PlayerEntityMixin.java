@@ -24,7 +24,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Inject(method = "getMovementSpeed", at = @At(value = "RETURN"), cancellable = true)
     public void getMovementSpeed(CallbackInfoReturnable<Float> cir) {
         GameControl control = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "player_movement_speed"));
-        double value = control.value * 0.01;
-        if (control.enabled) cir.setReturnValue(ConversionUtils.toFloat(this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) + value));
+        double value = control.value() * 0.01;
+        if (control.enabled()) cir.setReturnValue(ConversionUtils.toFloat(this.getAttributeValue(EntityAttributes.GENERIC_MOVEMENT_SPEED) + value));
     }
 }

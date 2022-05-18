@@ -18,9 +18,9 @@ public abstract class RotatePlayerMixin {
     @Inject(method = "tick", at = @At("TAIL"))
     private void rotateEntity(CallbackInfo ci) {
         GameControl rotatePlayer = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "rotate_player"));
-        if (rotatePlayer.enabled || rotatePlayer.value != 0) {
+        if (rotatePlayer.enabled() || rotatePlayer.value() != 0) {
             float yaw = ((PlayerEntity) (Object) this).getYaw();
-            yaw += rotatePlayer.value;
+            yaw += rotatePlayer.value();
             ((PlayerEntity) (Object) this).setYaw(yaw);
         }
     }

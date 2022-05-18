@@ -1,35 +1,44 @@
 package com.awakenedredstone.cubecontroller;
 
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.PersistentState;
 
-import java.util.Map;
+import java.io.File;
 
 public class CubeData extends PersistentState {
 
     public static CubeData fromNbt(NbtCompound nbt) {
-        CubeData cubeData = new CubeData();
-        for (Map.Entry<RegistryKey<GameControl>, GameControl> controlEntry : CubeController.GAME_CONTROL.getEntrySet()) {
-            if (nbt.contains(controlEntry.getKey().toString())) {
-                controlEntry.getValue().value = nbt.getCompound(controlEntry.getKey().getValue().toString()).getDouble("value");
-                controlEntry.getValue().enabled = nbt.getCompound(controlEntry.getKey().getValue().toString()).getBoolean("enabled");
-                controlEntry.getValue().nbtData().copyFrom(nbt.getCompound(controlEntry.getKey().getValue().toString()).getCompound("data"));
+        try {
+            CubeData cubeData = new CubeData();
+            for (GameControl control : CubeController.GAME_CONTROL) {
+                if (nbt.contains(control.identifier().toString())) {
+                    control.value(nbt.getCompound(control.identifier().toString()).getDouble("value"));
+                    control.enabled(nbt.getCompound(control.identifier().toString()).getBoolean("enabled"));
+                    control.nbtData(nbt.getCompound(control.identifier().toString()).getCompound("data"));
+                }
             }
+            return cubeData;
+        } catch (Exception e) {
+            return null;
         }
-        return cubeData;
     }
 
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
-        for (Map.Entry<RegistryKey<GameControl>, GameControl> controlEntry : CubeController.GAME_CONTROL.getEntrySet()) {
+        for (GameControl control : CubeController.GAME_CONTROL) {
             NbtCompound controlNbt = new NbtCompound();
-            controlNbt.putDouble("value", controlEntry.getValue().value);
-            controlNbt.putBoolean("enabled", controlEntry.getValue().enabled);
-            controlNbt.put("data", controlEntry.getValue().nbtData());
+            controlNbt.putDouble("value", control.value());
+            controlNbt.putBoolean("enabled", control.enabled());
+            controlNbt.put("data", control.nbtData());
 
-            nbt.put(controlEntry.getKey().getValue().toString(), controlNbt);
+            nbt.put(control.identifier().toString(), controlNbt);
         }
         return nbt;
+    }
+
+    @Override
+    public void save(File file) {
+        this.markDirty();
+        super.save(file);
     }
 }

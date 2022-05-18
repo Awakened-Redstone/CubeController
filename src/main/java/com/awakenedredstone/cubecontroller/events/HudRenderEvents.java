@@ -4,7 +4,7 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.client.util.math.MatrixStack;
 
-public interface HudRenderCallback {
+public interface HudRenderEvents {
     Event<HudTick> TICK = EventFactory.createArrayBacked(HudTick.class, (listeners) -> () -> {
         for (HudTick event : listeners) {
             event.onHudTick();
@@ -24,7 +24,7 @@ public interface HudRenderCallback {
     });
 
     @FunctionalInterface
-    public interface HudRender {
+    interface HudRender {
         /**
          * Called after rendering the whole hud, which is displayed in game, in a world.
          *
@@ -35,7 +35,7 @@ public interface HudRenderCallback {
     }
 
     @FunctionalInterface
-    public interface HudTick {
+    interface HudTick {
         /**
          * Called before ticking the whole hud (while not paused), which is displayed in game, in a world.
          */
@@ -43,7 +43,7 @@ public interface HudRenderCallback {
     }
 
     @FunctionalInterface
-    public interface HudPreTick {
+    interface HudPreTick {
         /**
          * Called before ticking the whole hud, which is displayed in game, in a world.
          */

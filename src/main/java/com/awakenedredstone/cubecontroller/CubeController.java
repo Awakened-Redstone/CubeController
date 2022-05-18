@@ -3,57 +3,70 @@ package com.awakenedredstone.cubecontroller;
 import com.awakenedredstone.cubecontroller.commands.GameControlCommand;
 import com.awakenedredstone.cubecontroller.events.CubeControllerEvents;
 import com.awakenedredstone.cubecontroller.exceptions.GameControlException;
+import com.awakenedredstone.cubecontroller.mixin.SimpleRegistryMixin;
 import com.awakenedredstone.cubecontroller.util.ConversionUtils;
 import com.awakenedredstone.cubecontroller.util.EasyNbtCompound;
 import com.awakenedredstone.cubecontroller.util.MessageUtils;
+import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.mixin.container.ServerPlayerEntityAccessor;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.datafixer.Schemas;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.nbt.NbtByte;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
-import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.util.registry.SimpleRegistry;
+import net.minecraft.world.PersistentStateManager;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class CubeController implements ModInitializer {
     public static final String MOD_ID = "cubecontroller";
     public static final Logger LOGGER = LoggerFactory.getLogger("CubeController");
-
-    private static final Set<StatusEffect> blacklistedPotions = new HashSet<>();
-    public static final Registry<GameControl> GAME_CONTROL = FabricRegistryBuilder.createSimple(GameControl.class, identifier("game_controls"))
+    public static final SimpleRegistry<GameControl> GAME_CONTROL = FabricRegistryBuilder.createSimple(GameControl.class, identifier("game_controls"))
             .attribute(RegistryAttribute.PERSISTED).attribute(RegistryAttribute.SYNCED).buildAndRegister();
 
+    private static final PersistentStateManager persistentStateManager = new PersistentStateManager(getModDataDir().toFile(), Schemas.getFixer());
+    private static final Set<StatusEffect> blacklistedPotions = new HashSet<>();
 
     private static CubeData cubeData;
+    private static ModPersistentData modData;
     private static MinecraftServer server;
 
     @Override
     public void onInitialize() {
-        registerControl(identifier("player_jump"));
-        registerControl(identifier("entity_jump"));
+        registerControl(identifier("entity_jump"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
         registerControl(identifier("player_movement_speed"));
-        registerControl(identifier("player_speed_attribute"));
-        registerControl(identifier("entity_speed_attribute"));
-        registerControl(identifier("player_health_attribute"));
-        registerControl(identifier("entity_health_attribute"));
+        registerControl(identifier("entity_speed_attribute"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
+        registerControl(identifier("entity_health_attribute"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
         registerControl(identifier("potion_chaos"), CubeControllerEvents.POTION_CHAOS);
         registerControl(identifier("floating_items"), null, false);
-        registerControl(identifier("inventory_shuffle"), null, true, new EasyNbtCompound(Map.of("shuffleEverything", NbtByte.of(false))));
+        registerControl(identifier("inventory_shuffle"), new EasyNbtCompound(Map.of("shuffleEverything", NbtByte.of(false))));
         registerControl(identifier("rotate_player"));
         registerListeners();
     }
@@ -71,6 +84,10 @@ public class CubeController implements ModInitializer {
 
     public static void registerControl(@NotNull Identifier identifier) {
         Registry.register(GAME_CONTROL, identifier, new GameControl(identifier));
+    }
+
+    public static void registerControl(@NotNull Identifier identifier, @NotNull NbtCompound nbt) {
+        Registry.register(GAME_CONTROL, identifier, new GameControl(identifier, CubeControllerEvents.NONE, true, nbt));
     }
 
     public static void registerControl(@NotNull Identifier identifier, @NotNull Event<CubeControllerEvents> event) {
@@ -98,6 +115,7 @@ public class CubeController implements ModInitializer {
      * {@code <namespace>.<path>} with any {@code /} on path being replaced with {@code .}<br/>
      * Examples: {@code minecraft:jump_boost} -> {@code minecraft.jump_boost}, <br/>
      * {@code minecraft:chests/stronghold_library} -> {@code minecraft.chests.stronghold_library}
+     *
      * @param identifier The {@link Identifier}
      * @return a {@link TranslatableText} with the key on the format {@code <namespace>.<path>}
      */
@@ -117,20 +135,64 @@ public class CubeController implements ModInitializer {
         return cubeData;
     }
 
+    public static ModPersistentData getModData() {
+        return modData;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void setModData(ModPersistentData modData) {
+        ((SimpleRegistryMixin<GameControl>) GAME_CONTROL).callAssertNotFrozen(GAME_CONTROL.getEntrySet().iterator().next().getKey());
+        CubeController.modData = modData;
+    }
+
     public static void blackListEffect(StatusEffect effect) {
         blacklistedPotions.add(effect);
     }
 
-    private void registerCommands(MinecraftServer server) {
-        GameControlCommand.register(server.getCommandManager().getDispatcher());
+    public static PersistentStateManager getPersistentStateManager() {
+        return persistentStateManager;
+    }
+
+    public static Path getModDataDir() {
+        Path modDataDir = FabricLoader.getInstance().getGameDir().resolve("mod-data");
+        if (!Files.exists(modDataDir)) {
+            try {
+                Files.createDirectories(modDataDir);
+            } catch (IOException e) {
+                throw new RuntimeException("Creating mod persistent data directory", e);
+            }
+        }
+        return modDataDir;
+    }
+
+    private void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
+        GameControlCommand.register(dispatcher);
     }
 
     private void registerListeners() {
-        ServerLifecycleEvents.SERVER_STARTING.register(this::registerCommands);
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            getCubeData().markDirty();
+        CommandRegistrationCallback.EVENT.register(this::registerCommands);
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 20 == 0) {
+                for (GameControl control : GAME_CONTROL.stream().filter(GameControl::enabled).toList()) {
+                    PacketByteBuf buf = PacketByteBufs.create();
+                    buf.writeIdentifier(control.identifier());
+                    buf.writeDouble(control.value());
+                    MessageUtils.broadcast(player -> ServerPlayNetworking.send(player, new Identifier(MOD_ID, "enabled_controls"), buf), "send_enabled_controls");
+                }
+            }
         });
-        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, serverResourceManager, success) -> registerCommands(server));
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            if (server.isSingleplayer()) {
+                NbtCompound defaultState = getModData().getData().getCompound("gameControlDefaultState");
+                for (String key : defaultState.getKeys()) {
+                    if (GAME_CONTROL.containsId(new Identifier(key))) {
+                        GAME_CONTROL.get(new Identifier(key)).enabled(false);
+                        GAME_CONTROL.get(new Identifier(key)).value(0);
+                        GAME_CONTROL.get(new Identifier(key)).nbtData(defaultState.getCompound(key).getCompound("data"));
+                    }
+                }
+            }
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             CubeController.server = server;
             cubeData = server.getOverworld().getPersistentStateManager().getOrCreate(CubeData::fromNbt, CubeData::new, MOD_ID);
