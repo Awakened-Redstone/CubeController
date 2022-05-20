@@ -1,5 +1,6 @@
 package com.awakenedredstone.cubecontroller;
 
+import com.awakenedredstone.cubecontroller.client.texture.GameControlSpriteManager;
 import com.awakenedredstone.cubecontroller.commands.GameControlCommand;
 import com.awakenedredstone.cubecontroller.events.CubeControllerEvents;
 import com.awakenedredstone.cubecontroller.exceptions.GameControlException;
@@ -17,8 +18,8 @@ import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.fabric.mixin.container.ServerPlayerEntityAccessor;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.datafixer.Schemas;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -30,6 +31,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
@@ -44,6 +46,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class CubeController implements ModInitializer {
     public static final String MOD_ID = "cubecontroller";
@@ -173,12 +177,21 @@ public class CubeController implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTicks() % 20 == 0) {
-                for (GameControl control : GAME_CONTROL.stream().filter(GameControl::enabled).toList()) {
-                    PacketByteBuf buf = PacketByteBufs.create();
-                    buf.writeIdentifier(control.identifier());
-                    buf.writeDouble(control.value());
-                    MessageUtils.broadcast(player -> ServerPlayNetworking.send(player, new Identifier(MOD_ID, "enabled_controls"), buf), "send_enabled_controls");
+                PacketByteBuf buf = PacketByteBufs.create();
+                NbtCompound nbt = new NbtCompound();
+                Stream<GameControl> controlStream = GAME_CONTROL.stream()
+                        .filter(control -> !control.nbtData().getBoolean("hideInfo"))
+                        .filter(control -> control.nbtData().getBoolean("alwaysVisible") || control.enabled());
+                for (GameControl control : controlStream.toList()) {
+                    NbtCompound info = new NbtCompound();
+                    info.putBoolean("enabled", control.enabled());
+                    info.putBoolean("valueBased", control.valueBased());
+                    if (control.valueBased()) info.putDouble("value", control.value());
+                    nbt.put(control.identifier().toString(), info);
                 }
+
+                buf.writeNbt(nbt);
+                MessageUtils.broadcast(player -> ServerPlayNetworking.send(player, new Identifier(MOD_ID, "update_control_info"), buf), "send_control_info");
             }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {

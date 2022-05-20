@@ -11,6 +11,8 @@
   "commands.cubecontroller.get.nbtData": "%s data: %s",
   "commands.cubecontroller.invoke": "Invoking event for %s",
 
+  "title.cubecontroller.config": "CubeController config",
+
   "text.cubecontroller.enabled.true": "enabled",
   "text.cubecontroller.enabled.false": "disabled",
   "text.cubecontroller.value": "x%s",

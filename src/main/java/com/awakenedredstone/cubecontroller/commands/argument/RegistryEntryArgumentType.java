@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 public class RegistryEntryArgumentType<T>
 implements ArgumentType<T> {
     private static final Collection<String> EXAMPLES = Arrays.asList("minecraft:potato", "cubecontroller:player_jump");
-    public static final DynamicCommandExceptionType INVALID_REGISTRY_EXCEPTION = new DynamicCommandExceptionType(id -> new TranslatableText("cubecontroller.commands.error.registryNotFound", id));
+    public static final DynamicCommandExceptionType INVALID_REGISTRY_EXCEPTION = new DynamicCommandExceptionType(id -> new TranslatableText("commands.cubecontroller.error.registryNotFound", id));
 
     protected final Registry<T> registry;
 
