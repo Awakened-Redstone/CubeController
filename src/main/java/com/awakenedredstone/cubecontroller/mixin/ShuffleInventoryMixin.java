@@ -46,7 +46,7 @@ public abstract class ShuffleInventoryMixin extends LivingEntity {
         GameControl inventoryShuffle = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "inventory_shuffle"));
         if (!inventoryShuffle.enabled() || inventoryShuffle.value() <= 0 || inventory.isEmpty() || getEntityWorld().isClient) return;
         if (shuffleCooldown++ >= inventoryShuffle.value()) {
-            int size = inventoryShuffle.nbtData().getBoolean("shuffleEverything") ? inventory.size() : inventory.main.size();
+            int size = inventoryShuffle.getNbt().getBoolean("shuffleEverything") ? inventory.size() : inventory.main.size();
             shuffleCooldown = 0;
 
             for (int i = 0; i < size; i++) {

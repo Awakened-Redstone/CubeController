@@ -93,29 +93,29 @@ public class GameControlCommand {
     }
 
     public static int executeSetData(ServerCommandSource source, GameControl control, NbtCompound nbt) throws CommandSyntaxException {
-        NbtCompound nbtCompound = control.nbtData().copy().copyFrom(nbt);
-        if (control.nbtData().equals(nbtCompound)) {
+        NbtCompound nbtCompound = control.getNbt().copyFrom(nbt);
+        if (control.getNbt().equals(nbtCompound)) {
             throw createCommandException("commands.cubecontroller.error.nothingChanged", control);
         }
-        control.nbtData().copyFrom(nbt);
+        control.copyNbt(nbt);
         sendFeedback(source, "commands.cubecontroller.set.nbtData", control, true);
         CubeController.getCubeData().markDirty();
         return 0;
     }
 
     public static int executeSetDataRaw(ServerCommandSource source, GameControl control, NbtCompound nbt) throws CommandSyntaxException {
-        NbtCompound nbtCompound = control.nbtData().copy().copyFrom(nbt);
-        if (control.nbtData().equals(nbtCompound)) {
+        NbtCompound nbtCompound = control.getNbt().copyFrom(nbt);
+        if (control.getNbt().equals(nbtCompound)) {
             throw createCommandException("commands.cubecontroller.error.nothingChanged", control);
         }
-        control.nbtData(nbt);
+        control.setNbt(nbt);
         sendFeedback(source, "commands.cubecontroller.set.nbtData", control, true);
         CubeController.getCubeData().markDirty();
         return 0;
     }
 
     public static int executeGetData(ServerCommandSource source, GameControl control) {
-        sendNbtFeedback(source, "commands.cubecontroller.get.nbtData", control, true, control.nbtData());
+        sendNbtFeedback(source, "commands.cubecontroller.get.nbtData", control, true, control.getNbt());
         return 0;
     }
 

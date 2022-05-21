@@ -1,18 +1,19 @@
 package com.awakenedredstone.cubecontroller.events;
 
+import com.awakenedredstone.cubecontroller.GameControl;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 
 @FunctionalInterface
 public interface CubeControllerEvents {
-    Event<CubeControllerEvents> NONE = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> () -> {});
-    Event<CubeControllerEvents> DUMMY = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> () -> {});
+    Event<CubeControllerEvents> NONE = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {});
+    Event<CubeControllerEvents> DUMMY = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {});
 
-    Event<CubeControllerEvents> POTION_CHAOS = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> () -> {
+    Event<CubeControllerEvents> POTION_CHAOS = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {
         for (CubeControllerEvents event : listeners) {
-            event.invoke();
+            event.invoke(control);
         }
     });
 
-    void invoke();
+    void invoke(GameControl control);
 }

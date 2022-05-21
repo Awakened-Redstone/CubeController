@@ -8,6 +8,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientLoginConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtCompound;
@@ -33,7 +34,19 @@ public class CubeControllerClient implements ClientModInitializer {
         HudRenderEvents.RENDER.register(ControlListRenderer.INSTANCE::render);
         HudRenderEvents.TICK.register(ControlListRenderer.INSTANCE::tick);
 
-        ClientPlayNetworking.registerGlobalReceiver(new Identifier(CubeController.MOD_ID, "update_control_info"), (client, handler, buf, responseSender) -> {
+        ClientLoginConnectionEvents.DISCONNECT.register((handler, client) -> controlInfo.clear());
+
+        ClientPlayNetworking.registerGlobalReceiver(CubeController.identifier("info_update"), (client, handler, buf, responseSender) -> {
+            Identifier identifier = buf.readIdentifier();
+            boolean enabled = buf.readBoolean();
+            boolean valueBased = buf.readBoolean();
+            double value = valueBased ? buf.readDouble() : 0;
+            client.execute(() -> {
+                controlInfo.put(identifier, new GameControlInfo(identifier, enabled, valueBased, value));
+            });
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(CubeController.identifier("info_update"), (client, handler, buf, responseSender) -> {
             NbtCompound nbt = buf.readNbt();
             client.execute(() -> {
                 for (String key : nbt.getKeys()) {

@@ -14,7 +14,7 @@ public class CubeData extends PersistentState {
                 if (nbt.contains(control.identifier().toString())) {
                     control.value(nbt.getCompound(control.identifier().toString()).getDouble("value"));
                     control.enabled(nbt.getCompound(control.identifier().toString()).getBoolean("enabled"));
-                    control.nbtData(nbt.getCompound(control.identifier().toString()).getCompound("data"));
+                    control.setNbt(nbt.getCompound(control.identifier().toString()).getCompound("data"));
                 }
             }
             return cubeData;
@@ -29,7 +29,7 @@ public class CubeData extends PersistentState {
             NbtCompound controlNbt = new NbtCompound();
             controlNbt.putDouble("value", control.value());
             controlNbt.putBoolean("enabled", control.enabled());
-            controlNbt.put("data", control.nbtData());
+            controlNbt.put("data", control.getNbt());
 
             nbt.put(control.identifier().toString(), controlNbt);
         }

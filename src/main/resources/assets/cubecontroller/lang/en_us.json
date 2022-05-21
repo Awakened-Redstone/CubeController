@@ -15,8 +15,7 @@
 
   "text.cubecontroller.enabled.true": "enabled",
   "text.cubecontroller.enabled.false": "disabled",
-  "text.cubecontroller.value": "x%s",
-
+  "text.cubecontroller.error.broadcast": "An error occurred when broadcasting %s",
 
   "cubecontroller.player_jump": "Player jump",
   "cubecontroller.entity_jump": "Entity jump",

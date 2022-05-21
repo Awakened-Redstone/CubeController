@@ -1,5 +1,6 @@
 package com.awakenedredstone.cubecontroller.client.gui.hud;
 
+import com.awakenedredstone.cubecontroller.CubeController;
 import com.awakenedredstone.cubecontroller.client.CubeControllerClient;
 import com.awakenedredstone.cubecontroller.client.GameControlInfo;
 import com.awakenedredstone.cubecontroller.client.texture.GameControlSpriteManager;
@@ -44,11 +45,12 @@ public class ControlListRenderer {
             inGameHud.drawTexture(matrix, x, 1, 165, 166, 24, 24);
             textRender.add(() -> DrawableHelper.drawStringWithShadow(matrix, client.textRenderer, "aaa", x + 3, 14, 0xFFFFFF));
             Sprite sprite = spriteManager.getSprite(control);
-            spriteRender.add(() -> {
+            int a = 0; //Dummy line
+            /*spriteRender.add(() -> {
                 RenderSystem.setShaderTexture(0, sprite.getAtlas().getId());
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
                 InGameHud.drawSprite(matrix, x + 3,  3, inGameHud.getZOffset(), 18, 18, sprite);
-            });
+            });*/
         }
         textRender.forEach(Runnable::run);
         spriteRender.forEach(Runnable::run);

@@ -19,7 +19,7 @@ public class RegistryMixin {
         NbtCompound registry = new NbtCompound();
         for (GameControl control : CubeController.GAME_CONTROL) {
             NbtCompound data = new NbtCompound();
-            data.put("data", control.nbtData());
+            data.put("data", control.getNbt());
             registry.put(control.identifier().toString(), data);
         }
         CubeController.getModData().getData().put("gameControlDefaultState", registry);

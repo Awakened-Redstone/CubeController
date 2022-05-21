@@ -2,7 +2,6 @@ package com.awakenedredstone.cubecontroller.mixin;
 
 import com.awakenedredstone.cubecontroller.CubeController;
 import com.awakenedredstone.cubecontroller.GameControl;
-import com.awakenedredstone.cubecontroller.exceptions.GameControlException;
 import com.awakenedredstone.cubecontroller.util.ConversionUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -42,7 +41,7 @@ public abstract class LivingEntityMixin extends Entity {
     @Inject(method = "jump", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;setVelocity(DDD)V", shift = At.Shift.AFTER))
     private void jump(CallbackInfo ci) {
         GameControl jump = CubeController.getControlSafe(new Identifier(CubeController.MOD_ID, "entity_jump"));
-        if (jump.enabled() && (this.isPlayer() || !jump.nbtData().getBoolean("playerOnly"))) {
+        if (jump.enabled() && (this.isPlayer() || !jump.getNbt().getBoolean("playerOnly"))) {
                 this.addVelocity(0, jump.value() * 0.1f, 0);
         }
     }
@@ -52,11 +51,11 @@ public abstract class LivingEntityMixin extends Entity {
         GameControl health = CubeController.getControlSafe(identifier("entity_health_attribute"));
         GameControl speed = CubeController.getControlSafe(identifier("entity_speed_attribute"));
 
-        if (attribute == EntityAttributes.GENERIC_MAX_HEALTH && health.enabled() && (this.isPlayer() || !health.nbtData().getBoolean("playerOnly"))) {
+        if (attribute == EntityAttributes.GENERIC_MAX_HEALTH && health.enabled() && (this.isPlayer() || !health.getNbt().getBoolean("playerOnly"))) {
             double newHealth = this.getAttributes().getValue(attribute) + health.value();
             if (this.getHealth() > newHealth) this.dataTracker.set(HEALTH, MathHelper.clamp(this.getHealth(), 0.0f, ConversionUtils.toFloat(newHealth)));
             cir.setReturnValue(newHealth);
-        } else if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && speed.enabled() && (this.isPlayer() || !speed.nbtData().getBoolean("playerOnly"))) {
+        } else if (attribute == EntityAttributes.GENERIC_MOVEMENT_SPEED && speed.enabled() && (this.isPlayer() || !speed.getNbt().getBoolean("playerOnly"))) {
             double newSpeed = this.getAttributes().getValue(attribute) * speed.value();
             cir.setReturnValue(newSpeed);
         }

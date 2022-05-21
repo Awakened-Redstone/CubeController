@@ -1,6 +1,5 @@
 package com.awakenedredstone.cubecontroller;
 
-import com.awakenedredstone.cubecontroller.client.texture.GameControlSpriteManager;
 import com.awakenedredstone.cubecontroller.commands.GameControlCommand;
 import com.awakenedredstone.cubecontroller.events.CubeControllerEvents;
 import com.awakenedredstone.cubecontroller.exceptions.GameControlException;
@@ -8,6 +7,7 @@ import com.awakenedredstone.cubecontroller.mixin.SimpleRegistryMixin;
 import com.awakenedredstone.cubecontroller.util.ConversionUtils;
 import com.awakenedredstone.cubecontroller.util.EasyNbtCompound;
 import com.awakenedredstone.cubecontroller.util.MessageUtils;
+import com.awakenedredstone.cubecontroller.util.PacketUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
@@ -17,9 +17,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.datafixer.Schemas;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -31,7 +31,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
@@ -46,7 +45,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class CubeController implements ModInitializer {
@@ -72,6 +70,7 @@ public class CubeController implements ModInitializer {
         registerControl(identifier("floating_items"), null, false);
         registerControl(identifier("inventory_shuffle"), new EasyNbtCompound(Map.of("shuffleEverything", NbtByte.of(false))));
         registerControl(identifier("rotate_player"));
+        registerPacketHandlers();
         registerListeners();
     }
 
@@ -173,65 +172,61 @@ public class CubeController implements ModInitializer {
         GameControlCommand.register(dispatcher);
     }
 
+    private void registerPacketHandlers() {
+        ServerPlayNetworking.registerGlobalReceiver(identifier("request_info_update"), (server, player, handler, buf, responseSender) -> {
+            server.execute(() -> {
+                responseSender.sendPacket(identifier("bulk_info_update"), PacketUtils.controlInfoBulkUpdate(PacketByteBufs.create()));
+            });
+        });
+    }
+
     private void registerListeners() {
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 == 0) {
-                PacketByteBuf buf = PacketByteBufs.create();
-                NbtCompound nbt = new NbtCompound();
-                Stream<GameControl> controlStream = GAME_CONTROL.stream()
-                        .filter(control -> !control.nbtData().getBoolean("hideInfo"))
-                        .filter(control -> control.nbtData().getBoolean("alwaysVisible") || control.enabled());
-                for (GameControl control : controlStream.toList()) {
-                    NbtCompound info = new NbtCompound();
-                    info.putBoolean("enabled", control.enabled());
-                    info.putBoolean("valueBased", control.valueBased());
-                    if (control.valueBased()) info.putDouble("value", control.value());
-                    nbt.put(control.identifier().toString(), info);
-                }
-
-                buf.writeNbt(nbt);
-                MessageUtils.broadcast(player -> ServerPlayNetworking.send(player, new Identifier(MOD_ID, "update_control_info"), buf), "send_control_info");
-            }
-        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             if (server.isSingleplayer()) {
+                CubeController.server = null;
                 NbtCompound defaultState = getModData().getData().getCompound("gameControlDefaultState");
                 for (String key : defaultState.getKeys()) {
                     if (GAME_CONTROL.containsId(new Identifier(key))) {
                         GAME_CONTROL.get(new Identifier(key)).enabled(false);
                         GAME_CONTROL.get(new Identifier(key)).value(0);
-                        GAME_CONTROL.get(new Identifier(key)).nbtData(defaultState.getCompound(key).getCompound("data"));
+                        GAME_CONTROL.get(new Identifier(key)).setNbt(defaultState.getCompound(key).getCompound("data"));
                     }
                 }
             }
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            CubeController.server = server;
             cubeData = server.getOverworld().getPersistentStateManager().getOrCreate(CubeData::fromNbt, CubeData::new, MOD_ID);
+            CubeController.server = server;
+        });
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            sender.sendPacket(identifier("bulk_info_update"), PacketUtils.controlInfoBulkUpdate(PacketByteBufs.create()));
         });
 
-        getControlSafe(new Identifier(MOD_ID, "potion_chaos")).event().register(() -> {
-            MessageUtils.broadcast(player -> {
-                Random random = new Random();
-                double _duration = random.nextGaussian(16, 7) + Math.max(0, random.nextGaussian(-50, 80));
-                double _amplifier = random.nextGaussian(3, 2) + Math.max(0, random.nextGaussian(-10, 20));
-                int duration = ConversionUtils.toInt(Math.round(MathHelper.clamp(3, _duration, 90) * 20));
-                int amplifier = ConversionUtils.toInt(Math.round(MathHelper.clamp(0, _amplifier, 100)));
-                Optional<RegistryEntry<StatusEffect>> randomPotion;
-                StatusEffect effect;
-                do {
-                    randomPotion = Registry.STATUS_EFFECT.getRandom(random);
-                    effect = randomPotion.isPresent() ? randomPotion.get().value() : StatusEffects.SLOWNESS;
-                } while (blacklistedPotions.contains(effect));
-                if (player.hasStatusEffect(effect)) {
-                    StatusEffectInstance playerEffect = player.getStatusEffect(effect);
-                    duration += playerEffect.getDuration();
-                    amplifier = Math.max(amplifier, playerEffect.getAmplifier());
-                    player.removeStatusEffectInternal(playerEffect.getEffectType());
-                }
-                player.addStatusEffect(new StatusEffectInstance(effect, duration, amplifier, false, false, true));
-            }, "potion_chaos");
+        getControlSafe(new Identifier(MOD_ID, "potion_chaos")).event().register(control -> {
+            if (control.enabled()) {
+                MessageUtils.broadcast(player -> {
+                    Random random = new Random();
+                    double _duration = Math.abs(random.nextGaussian(15, 20));
+                    if (_duration < 5) _duration += random.nextDouble(20);
+                    double _amplifier = Math.abs(random.nextGaussian(0, 23));
+                    int duration = ConversionUtils.toInt(Math.round(_duration * 20));
+                    int amplifier = ConversionUtils.toInt(Math.round(_amplifier));
+                    Optional<RegistryEntry<StatusEffect>> randomPotion;
+                    StatusEffect effect;
+                    do {
+                        randomPotion = Registry.STATUS_EFFECT.getRandom(random);
+                        effect = randomPotion.isPresent() ? randomPotion.get().value() : StatusEffects.SLOWNESS;
+                    } while (blacklistedPotions.contains(effect));
+                    if (player.hasStatusEffect(effect)) {
+                        StatusEffectInstance playerEffect = player.getStatusEffect(effect);
+                        duration += playerEffect.getDuration();
+                        amplifier = Math.max(amplifier, playerEffect.getAmplifier());
+                        player.removeStatusEffectInternal(playerEffect.getEffectType());
+                    }
+                    player.addStatusEffect(new StatusEffectInstance(effect, duration, amplifier, false, false, true));
+                }, identifier("broadcast/potion_chaos"));
+            }
         });
     }
 }

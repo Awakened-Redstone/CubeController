@@ -30,41 +30,51 @@ public class MessageUtils {
 
     public static void sendError(BaseText message) {
         LOGGER.error(message.getString());
-        broadcastToOps(player -> player.sendMessage(message.formatted(Formatting.RED), false), "error_message");
+        if (CubeController.getServer() != null) CubeController.getServer().getCommandSource().sendFeedback(message.formatted(Formatting.RED), true);
     }
 
     public static void sendError(BaseText message, Throwable throwable) {
         LOGGER.error(message.getString(), throwable);
-        broadcastToOps(player -> player.sendMessage(message.formatted(Formatting.RED), false), "error_message");
+        if (CubeController.getServer() != null) CubeController.getServer().getCommandSource().sendFeedback(message.formatted(Formatting.RED), true);
     }
 
-    public static void broadcast(Consumer<ServerPlayerEntity> consumer, String id) {
-        broadcast(CubeController.getServer().getPlayerManager().getPlayerList(), consumer, id);
-    }
-
-    public static void broadcast(List<ServerPlayerEntity> players, Consumer<ServerPlayerEntity> consumer, String id) {
-        try {
-            players.forEach(consumer);
-        } catch (Exception e) {
-            CubeController.getServer().getCommandSource().sendFeedback(new TranslatableText("text.subathon.error.broadcast", id).formatted(Formatting.RED), true);
+    public static void broadcast(Consumer<ServerPlayerEntity> consumer, Identifier identifier) {
+        if (CubeController.getServer() != null) {
+            broadcast(CubeController.getServer().getPlayerManager().getPlayerList(), consumer, identifier);
         }
     }
 
-    public static void broadcastToOps(Consumer<ServerPlayerEntity> consumer, String id) {
-        if (CubeController.getServer().isDedicated()) {
-            try {
-                if (CubeController.getServer().getPlayerManager().getOpList() instanceof ExtendedOperatorList ops) {
-                    List<UUID> uuids = Arrays.stream(ops.getUUIDs()).toList();
-                    CubeController.getServer().getPlayerManager().getPlayerList().stream().filter(player -> uuids.contains(player.getUuid())).forEach(consumer);
-                } else {
-                    List<String> names = Arrays.stream(CubeController.getServer().getPlayerManager().getOpList().getNames()).toList();
-                    CubeController.getServer().getPlayerManager().getPlayerList().stream().filter(player -> names.contains(player.getGameProfile().getName())).forEach(consumer);
+    public static void broadcastPacket(Identifier identifier, PacketByteBuf buf) {
+        broadcast(player -> ServerPlayNetworking.send(player, identifier, buf), identifier);
+    }
+
+    public static void broadcast(List<ServerPlayerEntity> players, Consumer<ServerPlayerEntity> consumer, Identifier identifier) {
+        try {
+            players.forEach(consumer);
+        } catch (Exception e) {
+            if (CubeController.getServer() != null) CubeController.getServer().getCommandSource().sendFeedback(broadcastError(identifier), true);
+            LOGGER.error("Error at broadcast " + identifier, e);
+        }
+    }
+
+    public static void broadcastToOps(Consumer<ServerPlayerEntity> consumer, Identifier identifier) {
+        if (CubeController.getServer() != null) {
+            if (CubeController.getServer().isDedicated()) {
+                try {
+                    if (CubeController.getServer().getPlayerManager().getOpList() instanceof ExtendedOperatorList ops) {
+                        List<UUID> uuids = Arrays.stream(ops.getUUIDs()).toList();
+                        CubeController.getServer().getPlayerManager().getPlayerList().stream().filter(player -> uuids.contains(player.getUuid())).forEach(consumer);
+                    } else {
+                        List<String> names = Arrays.stream(CubeController.getServer().getPlayerManager().getOpList().getNames()).toList();
+                        CubeController.getServer().getPlayerManager().getPlayerList().stream().filter(player -> names.contains(player.getGameProfile().getName())).forEach(consumer);
+                    }
+                } catch (Exception e) {
+                    CubeController.getServer().getCommandSource().sendFeedback(broadcastError(identifier), true);
+                    LOGGER.error("Error at broadcast " + identifier, e);
                 }
-            } catch (Exception e) {
-                CubeController.getServer().getCommandSource().sendFeedback(new TranslatableText("text.subathon.error.broadcast", id), true);
+            } else {
+                broadcast(consumer, identifier);
             }
-        } else {
-            broadcast(consumer, id);
         }
     }
 
@@ -74,5 +84,9 @@ public class MessageUtils {
 
     public static void sendTitle(ServerPlayerEntity player, Text title, Function<Text, Packet<?>> constructor) {
         player.networkHandler.sendPacket(constructor.apply(title));
+    }
+
+    private static Text broadcastError(Identifier identifier) {
+        return new TranslatableText("text.cubecontroller.error.broadcast", identifier).formatted(Formatting.RED);
     }
 }
