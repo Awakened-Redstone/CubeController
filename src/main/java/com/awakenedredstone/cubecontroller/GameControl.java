@@ -47,7 +47,9 @@ public class GameControl {
         if (!valueBased) return;
         this.value = value;
         if (CubeController.getServer() != null) {
-            MessageUtils.broadcastPacket(CubeController.identifier("packet/info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+                MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            }
         }
     }
 
@@ -58,7 +60,11 @@ public class GameControl {
     public void enabled(boolean enabled) {
         this.enabled = enabled;
         if (CubeController.getServer() != null) {
-            MessageUtils.broadcastPacket(CubeController.identifier("packet/info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+                MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            } else {
+                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
+            }
         }
     }
 
@@ -82,14 +88,22 @@ public class GameControl {
     public void setNbt(NbtCompound nbt) {
         nbtData = nbt;
         if (CubeController.getServer() != null) {
-            MessageUtils.broadcastPacket(CubeController.identifier("packet/info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            if (nbtData.getBoolean("hideInfo") || (!nbt.getBoolean("alwaysVisible") && !enabled)) {
+                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
+            } else if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+                MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            }
         }
     }
 
     public void copyNbt(NbtCompound nbt) {
         nbtData.copyFrom(nbt);
         if (CubeController.getServer() != null) {
-            MessageUtils.broadcastPacket(CubeController.identifier("packet/info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            if (nbtData.getBoolean("hideInfo") || (!nbt.getBoolean("alwaysVisible") && !enabled)) {
+                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
+            } else if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+                MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            }
         }
     }
 

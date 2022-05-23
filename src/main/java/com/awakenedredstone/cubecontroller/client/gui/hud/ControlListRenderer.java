@@ -1,6 +1,5 @@
 package com.awakenedredstone.cubecontroller.client.gui.hud;
 
-import com.awakenedredstone.cubecontroller.CubeController;
 import com.awakenedredstone.cubecontroller.client.CubeControllerClient;
 import com.awakenedredstone.cubecontroller.client.GameControlInfo;
 import com.awakenedredstone.cubecontroller.client.texture.GameControlSpriteManager;
@@ -9,13 +8,20 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.BaseText;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -38,22 +44,32 @@ public class ControlListRenderer {
         for (Map.Entry<Identifier, GameControlInfo> controlInfo : CubeControllerClient.INSTANCE.controlInfo.entrySet()) {
             GameControlInfo control = controlInfo.getValue();
             boolean enabled = control.enabled();
-            boolean valueBased = control.valueBased();
-            double value = control.value();
-            int x = 25 * i++ + 1;
+            MutableText text = control.valueBased() && enabled ? new LiteralText(new DecimalFormat("0.###").format(control.value())) :
+                    new LiteralText(enabled ? "ON" : "OFF").formatted(enabled ? Formatting.GREEN : Formatting.RED);
+            int screenWidth = (client.getWindow().getScaledWidth() / 3) / 25;
+            int y = 25 * (i / screenWidth) + 1;
+            int x = 25 * (i++ % screenWidth) + 1;
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.8f);
-            inGameHud.drawTexture(matrix, x, 1, 165, 166, 24, 24);
-            textRender.add(() -> DrawableHelper.drawStringWithShadow(matrix, client.textRenderer, "aaa", x + 3, 14, 0xFFFFFF));
+            inGameHud.drawTexture(matrix, x, y, 165, 166, 24, 24);
+            TextRenderer textRenderer = client.textRenderer;
+            textRender.add(() -> {
+                matrix.push();
+                int width = textRenderer.getWidth(text);
+                matrix.translate(x + 12, y + 23, 0);
+                if (width > 20) matrix.scale(20.0f / width, 20.0f / width, 1);
+                matrix.translate(-(width / 2), -textRenderer.fontHeight, 0);
+                DrawableHelper.drawTextWithShadow(matrix, textRenderer, text, 0, 0, 0xFFFFFF);
+                matrix.pop();
+            });
             Sprite sprite = spriteManager.getSprite(control);
-            int a = 0; //Dummy line
-            /*spriteRender.add(() -> {
+            spriteRender.add(() -> {
                 RenderSystem.setShaderTexture(0, sprite.getAtlas().getId());
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-                InGameHud.drawSprite(matrix, x + 3,  3, inGameHud.getZOffset(), 18, 18, sprite);
-            });*/
+                InGameHud.drawSprite(matrix, x + 3, 3 + y, inGameHud.getZOffset(), 18, 18, sprite);
+            });
         }
-        textRender.forEach(Runnable::run);
         spriteRender.forEach(Runnable::run);
+        textRender.forEach(Runnable::run);
         matrix.pop();
     }
 

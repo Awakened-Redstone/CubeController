@@ -222,7 +222,7 @@ public class CubeController implements ModInitializer {
                         StatusEffectInstance playerEffect = player.getStatusEffect(effect);
                         duration += playerEffect.getDuration();
                         amplifier = Math.max(amplifier, playerEffect.getAmplifier());
-                        player.removeStatusEffectInternal(playerEffect.getEffectType());
+                        player.removeStatusEffect(playerEffect.getEffectType());
                     }
                     player.addStatusEffect(new StatusEffectInstance(effect, duration, amplifier, false, false, true));
                 }, identifier("broadcast/potion_chaos"));

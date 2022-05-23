@@ -45,7 +45,7 @@ public class MessageUtils {
     }
 
     public static void broadcastPacket(Identifier identifier, PacketByteBuf buf) {
-        broadcast(player -> ServerPlayNetworking.send(player, identifier, buf), identifier);
+        broadcast(player -> ServerPlayNetworking.send(player, identifier, buf), new Identifier(identifier.getNamespace(), "packet/" + identifier.getPath()));
     }
 
     public static void broadcast(List<ServerPlayerEntity> players, Consumer<ServerPlayerEntity> consumer, Identifier identifier) {

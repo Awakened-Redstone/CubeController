@@ -14,8 +14,10 @@
     "SimpleRegistryMixin"
   ],
   "client": [
+    "AbstractInventoryScreenMixin",
     "InGameHudAccessor",
-    "InGameHudMixin"
+    "InGameHudMixin",
+    "MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1
