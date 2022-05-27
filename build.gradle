@@ -13,6 +13,7 @@ loom {
 
 def CHANGELOG = new File('CHANGELOG.md').exists() ? new File('CHANGELOG.md').text : "No changelog provided"
 
+archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
@@ -97,7 +98,13 @@ build.dependsOn remapMavenJar
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            from components.java
+            artifact(sourcesJar) {
+                builtBy remapSourcesJar
+            }
+            
+            afterEvaluate {
+                artifact remapJar
+            }
         }
     }
 
