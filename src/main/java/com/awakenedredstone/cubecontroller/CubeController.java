@@ -13,7 +13,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -24,14 +23,14 @@ import net.minecraft.datafixer.Schemas;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtByte;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.util.registry.SimpleRegistry;
@@ -45,7 +44,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Stream;
+
+import static com.awakenedredstone.cubecontroller.events.ControlEvents.POTION_CHAOS;
+import static com.awakenedredstone.cubecontroller.events.ControlEvents.SHUFFLE_INVENTORY;
 
 public class CubeController implements ModInitializer {
     public static final String MOD_ID = "cubecontroller";
@@ -66,9 +67,9 @@ public class CubeController implements ModInitializer {
         registerControl(identifier("player_movement_speed"));
         registerControl(identifier("entity_speed_attribute"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
         registerControl(identifier("entity_health_attribute"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
-        registerControl(identifier("potion_chaos"), CubeControllerEvents.POTION_CHAOS);
+        registerControl(identifier("potion_chaos"), POTION_CHAOS);
         registerControl(identifier("floating_items"), null, false);
-        registerControl(identifier("inventory_shuffle"), new EasyNbtCompound(Map.of("shuffleEverything", NbtByte.of(false))));
+        registerControl(identifier("inventory_shuffle"), SHUFFLE_INVENTORY, true, new EasyNbtCompound(Map.of("shuffleEverything", NbtByte.of(false))));
         registerControl(identifier("rotate_player"));
         registerPacketHandlers();
         registerListeners();
@@ -203,8 +204,37 @@ public class CubeController implements ModInitializer {
             sender.sendPacket(identifier("bulk_info_update"), PacketUtils.controlInfoBulkUpdate(PacketByteBufs.create()));
         });
 
-        getControlSafe(new Identifier(MOD_ID, "potion_chaos")).event().register(control -> {
-            if (control.enabled()) {
+        SHUFFLE_INVENTORY.register(control ->
+                MessageUtils.broadcast(player -> {
+                    PlayerInventory inventory = player.getInventory();
+                    Random random = player.getRandom();
+                    int size = control.getNbt().getBoolean("shuffleEverything") ? inventory.size() : inventory.main.size();
+
+                    for (int i = 0; i < size; i++) {
+                        int slotA = random.nextInt(size);
+                        int slotB = random.nextInt(size);
+
+                        ItemStack stackA = inventory.getStack(slotA);
+                        ItemStack stackB = inventory.getStack(slotB);
+
+                        if (stackA != null) {
+                            inventory.removeStack(slotA);
+                        }
+                        if (stackB != null) {
+                            inventory.removeStack(slotB);
+                        }
+
+                        if (stackA != null) {
+                            inventory.setStack(slotB, stackA);
+                        }
+                        if (stackB != null) {
+                            inventory.setStack(slotA, stackB);
+                        }
+                    }
+                }, identifier("control/inventory_shuffle"))
+        );
+
+        POTION_CHAOS.register(control ->
                 MessageUtils.broadcast(player -> {
                     Random random = new Random();
                     double _duration = Math.abs(random.nextGaussian(15, 20));
@@ -225,8 +255,7 @@ public class CubeController implements ModInitializer {
                         player.removeStatusEffect(playerEffect.getEffectType());
                     }
                     player.addStatusEffect(new StatusEffectInstance(effect, duration, amplifier, false, false, true));
-                }, identifier("broadcast/potion_chaos"));
-            }
-        });
+                }, identifier("broadcast/potion_chaos"))
+        );
     }
 }

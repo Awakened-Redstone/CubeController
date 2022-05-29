@@ -77,6 +77,6 @@ public class ConversionUtils {
     }
 
     public static float toFloat(double value) {
-        return (float) MathHelper.clamp(value, Float.MIN_VALUE, Float.MAX_VALUE);
+        return (float) MathHelper.clamp(value, -Float.MAX_VALUE, Float.MAX_VALUE);
     }
 }

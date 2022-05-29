@@ -13,6 +13,7 @@ loom {
 
 def CHANGELOG = new File('CHANGELOG.md').exists() ? new File('CHANGELOG.md').text : "No changelog provided"
 
+archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
@@ -26,8 +27,8 @@ repositories {
         url "https://maven.terraformersmc.com/releases/"
     }
     maven {
-        name = "Crowdin Translate"
-        url = "https://minecraft.guntram.de/maven/"
+        name "Crowdin Translate"
+        url "https://minecraft.guntram.de/maven/"
     }
 }
 
@@ -97,13 +98,24 @@ build.dependsOn remapMavenJar
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            artifactId = archivesBaseName
             from components.java
         }
     }
 
     // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        mavenLocal()
+        //mavenLocal()
+        maven {
+            url = System.getenv().MAVEN_REPO
+            credentials(HttpHeaderCredentials) {
+                name System.getenv().MAVEN_AUTH_HEADER
+                value System.getenv().MAVEN_AUTH_TOKEN
+            }
+            authentication {
+                header(HttpHeaderAuthentication)
+            }
+        }
     }
 }
 
@@ -111,7 +123,7 @@ tasks.modrinth.dependsOn(tasks.remapMavenJar)
 
 modrinth {
     token = System.getenv().MODRINTH_TOKEN
-    projectId = ""
+    projectId = "VqrLRUE8"
     versionName = "[$project.minecraft_version] CubeController - $project.version"
     changelog = CHANGELOG ?: "No changelog provided"
     uploadFile = remapJar

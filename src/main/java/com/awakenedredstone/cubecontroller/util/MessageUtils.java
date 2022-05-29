@@ -3,7 +3,6 @@ package com.awakenedredstone.cubecontroller.util;
 import com.awakenedredstone.cubecontroller.CubeController;
 import com.awakenedredstone.cubecontroller.override.ExtendedOperatorList;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
@@ -16,10 +15,8 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
-import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;

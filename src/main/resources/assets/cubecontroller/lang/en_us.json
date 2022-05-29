@@ -9,9 +9,11 @@
   "commands.cubecontroller.get.enabled": "%s is %s",
   "commands.cubecontroller.get.value": "%s value is %s",
   "commands.cubecontroller.get.nbtData": "%s data: %s",
-  "commands.cubecontroller.invoke": "Invoking event for %s",
+  "commands.cubecontroller.invoke.success": "Invoked event for %s",
+  "commands.cubecontroller.invoke.fail": "Failed to invoke event for %s",
 
   "title.cubecontroller.config": "CubeController config",
+  "category.cubecontroller.general": "General",
 
   "text.cubecontroller.enabled.true": "enabled",
   "text.cubecontroller.enabled.false": "disabled",

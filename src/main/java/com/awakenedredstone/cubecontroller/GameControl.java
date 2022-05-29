@@ -77,6 +77,10 @@ public class GameControl {
         return event;
     }
 
+    public boolean hasEvent() {
+        return event == CubeControllerEvents.NONE;
+    }
+
     public boolean valueBased() {
         return valueBased;
     }
@@ -107,8 +111,9 @@ public class GameControl {
         }
     }
 
-    public void invoke() {
-        event.invoker().invoke(this);
+    public boolean invoke() {
+        if (enabled) event.invoker().invoke(this);
+        return enabled;
     }
 
     @Override

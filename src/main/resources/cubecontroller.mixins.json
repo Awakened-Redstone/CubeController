@@ -4,6 +4,7 @@
   "package": "com.awakenedredstone.cubecontroller.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "ExecuteCommandMixin",
     "FloatingItemMixin",
     "LivingEntityMixin",
     "PlayerEntityMixin",

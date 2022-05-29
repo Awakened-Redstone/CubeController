@@ -9,6 +9,7 @@ import net.minecraft.client.texture.SpriteAtlasHolder;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
 @Environment(EnvType.CLIENT)
@@ -19,10 +20,16 @@ public class GameControlSpriteManager extends SpriteAtlasHolder {
 
     @Override
     protected Stream<Identifier> getSprites() {
-        return CubeController.GAME_CONTROL.getIds().stream();
+        ArrayList<Identifier> list = new ArrayList<>(CubeController.GAME_CONTROL.getIds());
+        list.add(CubeController.identifier("jump_captain"));
+        return list.stream();
     }
 
     public Sprite getSprite(GameControlInfo control) {
         return this.getSprite(control.identifier());
+    }
+
+    public Sprite getSprite(Identifier identifier) {
+        return super.getSprite(identifier);
     }
 }

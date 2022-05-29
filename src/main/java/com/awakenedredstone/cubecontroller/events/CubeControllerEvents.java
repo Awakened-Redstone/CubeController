@@ -9,11 +9,5 @@ public interface CubeControllerEvents {
     Event<CubeControllerEvents> NONE = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {});
     Event<CubeControllerEvents> DUMMY = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {});
 
-    Event<CubeControllerEvents> POTION_CHAOS = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {
-        for (CubeControllerEvents event : listeners) {
-            event.invoke(control);
-        }
-    });
-
     void invoke(GameControl control);
 }

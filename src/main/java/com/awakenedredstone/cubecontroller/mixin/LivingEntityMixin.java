@@ -2,16 +2,12 @@ package com.awakenedredstone.cubecontroller.mixin;
 
 import com.awakenedredstone.cubecontroller.CubeController;
 import com.awakenedredstone.cubecontroller.GameControl;
-import com.awakenedredstone.cubecontroller.util.ConversionUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.AttributeContainer;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,9 +15,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import static com.awakenedredstone.cubecontroller.CubeController.identifier;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity {
@@ -46,7 +39,7 @@ public abstract class LivingEntityMixin extends Entity {
         }
     }
 
-    @Inject(method = "getAttributeValue", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "getAttributeValue", at = @At("HEAD"), cancellable = true)
     public final void getAttributeValue(EntityAttribute attribute, CallbackInfoReturnable<Double> cir) {
         GameControl health = CubeController.getControlSafe(identifier("entity_health_attribute"));
         GameControl speed = CubeController.getControlSafe(identifier("entity_speed_attribute"));
@@ -59,5 +52,5 @@ public abstract class LivingEntityMixin extends Entity {
             double newSpeed = this.getAttributes().getValue(attribute) * speed.value();
             cir.setReturnValue(newSpeed);
         }
-    }
+    }*/
 }

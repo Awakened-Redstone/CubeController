@@ -1,10 +1,11 @@
 package com.awakenedredstone.cubecontroller.client;
 
 import com.awakenedredstone.cubecontroller.CubeController;
-import com.awakenedredstone.cubecontroller.client.gui.hud.ControlListRenderer;
+import com.awakenedredstone.cubecontroller.client.gui.hud.ControlInfoRenderer;
 import com.awakenedredstone.cubecontroller.client.texture.GameControlSpriteManager;
 import com.awakenedredstone.cubecontroller.events.HudRenderEvents;
 import com.awakenedredstone.cubecontroller.events.MinecraftClientCallback;
+import de.guntram.mcmod.crowdintranslate.CrowdinTranslate;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -26,12 +27,12 @@ public class CubeControllerClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         INSTANCE = this;
+        CrowdinTranslate.downloadTranslations("cubecontroller", CubeController.MOD_ID);
         MinecraftClientCallback.SPRITE_MANAGER.register(client -> {
             controlSpriteManager = new GameControlSpriteManager(client.getTextureManager());
             ((ReloadableResourceManagerImpl) client.getResourceManager()).registerReloader(this.controlSpriteManager);
         });
-        HudRenderEvents.RENDER.register(ControlListRenderer.INSTANCE::render);
-        HudRenderEvents.TICK.register(ControlListRenderer.INSTANCE::tick);
+        HudRenderEvents.RENDER.register(ControlInfoRenderer.INSTANCE::render);
 
         ClientLoginConnectionEvents.DISCONNECT.register((handler, client) -> controlInfo.clear());
 
