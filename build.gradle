@@ -122,9 +122,22 @@ publishing {
 tasks.modrinth.dependsOn(tasks.remapMavenJar)
 
 modrinth {
+    String projectVersion = project.version.toString();
+    List<String> projectVersionNumber = projectVersion.split("-", 2)
+    String projectVersionName = "Release ${projectVersionNumber[0]}"
+    if (projectVersion.contains("beta")) {
+        List<String> projectBeta = projectVersionNumber[1].split("[.]", 2)
+        projectVersionName = "${projectVersionNumber[0]} - Beta ${projectBeta[1]}"
+        versionType = "beta"
+    } else if (projectVersion.contains("alpha")) {
+        List<String> projectAlpha = projectVersionNumber[1].split("[.]", 2)
+        projectVersionName = "${projectVersionNumber[0]} - Alpha ${projectAlpha[1]}"
+        versionType = "alpha"
+    }
+
     token = System.getenv().MODRINTH_TOKEN
     projectId = "VqrLRUE8"
-    versionName = "[$project.minecraft_version] CubeController - $project.version"
+    versionName = projectVersionName
     changelog = CHANGELOG ?: "No changelog provided"
     uploadFile = remapJar
     dependencies = [
