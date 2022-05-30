@@ -3,6 +3,7 @@ package com.awakenedredstone.cubecontroller.commands;
 import com.awakenedredstone.cubecontroller.CubeController;
 import com.awakenedredstone.cubecontroller.GameControl;
 import com.awakenedredstone.cubecontroller.commands.argument.RegistryEntryArgumentType;
+import com.awakenedredstone.cubecontroller.util.ConversionUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
@@ -93,12 +94,12 @@ public class GameControlCommand {
     public static int executeSetEnabled(ServerCommandSource source, GameControl control, boolean enabled) {
         control.enabled(enabled);
         sendFeedback(source, "commands.cubecontroller.set.enabled", control, true, new TranslatableText("text.cubecontroller.enabled." + enabled));
-        return 0;
+        return 1;
     }
 
     public static int executeGetEnabled(ServerCommandSource source, GameControl control) {
         sendFeedback(source, "commands.cubecontroller.get.enabled", control, false, new TranslatableText("text.cubecontroller.enabled." + control.enabled()));
-        return 0;
+        return control.enabled() ? 1 : 0;
     }
 
     public static int executeSetValue(ServerCommandSource source, GameControl control, double value) throws CommandSyntaxException {
@@ -107,14 +108,14 @@ public class GameControlCommand {
         }
         control.value(value);
         sendFeedback(source, "commands.cubecontroller.set.value", control, true, value);
-        return 0;
+        return 1;
     }
 
     public static int executeGetValue(ServerCommandSource source, GameControl control) {
         if (!control.valueBased())
             sendFeedback(source, "commands.cubecontroller.error.notValueBased", control, false, control.value());
         else sendFeedback(source, "commands.cubecontroller.get.value", control, false, control.value());
-        return 0;
+        return ConversionUtils.toInt(control.value());
     }
 
     public static int executeSetData(ServerCommandSource source, GameControl control, NbtCompound nbt) throws CommandSyntaxException {
@@ -124,7 +125,7 @@ public class GameControlCommand {
         }
         control.copyNbt(nbt);
         sendFeedback(source, "commands.cubecontroller.set.nbtData", control, true);
-        return 0;
+        return 1;
     }
 
     public static int executeSetDataRaw(ServerCommandSource source, GameControl control, NbtCompound nbt) throws CommandSyntaxException {
@@ -134,21 +135,22 @@ public class GameControlCommand {
         }
         control.setNbt(nbt);
         sendFeedback(source, "commands.cubecontroller.set.nbtData", control, true);
-        return 0;
+        return 1;
     }
 
     public static int executeGetData(ServerCommandSource source, GameControl control) {
         sendNbtFeedback(source, "commands.cubecontroller.get.nbtData", control, true, control.getNbt());
-        return 0;
+        return 1;
     }
 
     public static int executeInvoke(ServerCommandSource source, GameControl control) throws CommandSyntaxException {
         if (control.hasEvent()) throw createCommandException("commands.cubecontroller.error.doesNotHaveEvent", control);
 
-        if (control.invoke()) sendFeedback(source, "commands.cubecontroller.invoke.success", control, true);
+        boolean success = control.invoke();
+        if (success) sendFeedback(source, "commands.cubecontroller.invoke.success", control, true);
         else sendFeedback(source, "commands.cubecontroller.invoke.fail", control, true);
 
-        return 0;
+        return success ? 1 : 0;
     }
 
     private static void sendNbtFeedback(ServerCommandSource source, String key, GameControl control, boolean broadcastToOps, NbtCompound nbtCompound) {
