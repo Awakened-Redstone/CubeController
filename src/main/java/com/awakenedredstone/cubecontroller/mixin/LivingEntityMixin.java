@@ -28,8 +28,6 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Shadow public abstract AttributeContainer getAttributes();
 
-    @Shadow public abstract void setHealth(float health);
-
     @Shadow public abstract float getHealth();
 
     @Shadow @Final private static TrackedData<Float> HEALTH;

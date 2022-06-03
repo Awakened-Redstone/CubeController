@@ -15,8 +15,8 @@ import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
@@ -45,8 +45,8 @@ public class ControlInfoRenderer {
             for (Map.Entry<Identifier, GameControlInfo> controlInfo : CubeControllerClient.INSTANCE.controlInfo.entrySet()) {
                 GameControlInfo control = controlInfo.getValue();
                 boolean enabled = control.enabled();
-                MutableText text = control.valueBased() && enabled ? new LiteralText(new DecimalFormat("0.###").format(control.value())) :
-                        new LiteralText(enabled ? "ON" : "OFF").formatted(enabled ? Formatting.GREEN : Formatting.RED);
+                MutableText text = control.valueBased() && enabled ? Text.literal(new DecimalFormat("0.###").format(control.value())) :
+                        Text.literal(enabled ? "ON" : "OFF").formatted(enabled ? Formatting.GREEN : Formatting.RED);
                 int screenWidth = (client.getWindow().getScaledWidth() / 3) / 25;
                 int y = 25 * (i / screenWidth) + 1;
                 int x = 25 * (i++ % screenWidth) + 1;

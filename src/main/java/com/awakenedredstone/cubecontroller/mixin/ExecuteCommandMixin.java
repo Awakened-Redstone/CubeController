@@ -28,19 +28,21 @@ import java.util.function.IntFunction;
 
 @Mixin(ExecuteCommand.class)
 public abstract class ExecuteCommandMixin {
-    @Shadow @Final private static BinaryOperator<ResultConsumer<ServerCommandSource>> BINARY_RESULT_CONSUMER;
+    @Shadow
+    @Final
+    private static BinaryOperator<ResultConsumer<ServerCommandSource>> BINARY_RESULT_CONSUMER;
 
     @Inject(method = "addStoreArguments", at = @At("TAIL"))
     private static void addStoreArguments(LiteralCommandNode<ServerCommandSource> node, LiteralArgumentBuilder<ServerCommandSource> builder2, boolean requestResult, CallbackInfoReturnable<ArgumentBuilder<ServerCommandSource, ?>> cir) {
         if (requestResult) {
             builder2.then(CommandManager.literal("control")
                     .then(CommandManager.literal("value")
-                            .then(CommandManager.literal("value")
-                                    .then(CommandManager.argument("scale", DoubleArgumentType.doubleArg())
-                                            .then(CommandManager.argument("control", RegistryEntryArgumentType.registry(CubeController.GAME_CONTROL))
-                                                    .redirect(node, context -> executeStoreControlValue(context.getSource(),
-                                                            RegistryEntryArgumentType.getRegistryValue(context, "control", GameControl.class),
-                                                            result -> result * DoubleArgumentType.getDouble(context, "scale"))))))));
+                            .then(CommandManager.argument("scale", DoubleArgumentType.doubleArg())
+                                    .then(CommandManager.argument("control", RegistryEntryArgumentType.registry(CubeController.GAME_CONTROL))
+                                            .redirect(node, context -> executeStoreControlValue(context.getSource(),
+                                                    RegistryEntryArgumentType.getRegistryValue(context, "control", GameControl.class),
+                                                    result -> result * DoubleArgumentType.getDouble(context, "scale")))))))
+            ;
         }
     }
 

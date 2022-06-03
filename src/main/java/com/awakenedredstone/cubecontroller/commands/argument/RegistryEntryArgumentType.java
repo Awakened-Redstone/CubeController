@@ -12,7 +12,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
@@ -26,7 +26,7 @@ import java.util.function.Function;
 public class RegistryEntryArgumentType<T>
 implements ArgumentType<T> {
     private static final Collection<String> EXAMPLES = Arrays.asList("minecraft:potato", "cubecontroller:entity_jump");
-    public static final DynamicCommandExceptionType INVALID_REGISTRY_EXCEPTION = new DynamicCommandExceptionType(id -> new TranslatableText("commands.cubecontroller.error.registryNotFound", id));
+    public static final DynamicCommandExceptionType INVALID_REGISTRY_EXCEPTION = new DynamicCommandExceptionType(id -> Text.translatable("commands.cubecontroller.error.registryNotFound", id));
 
     protected final Registry<T> registry;
 

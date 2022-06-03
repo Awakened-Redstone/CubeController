@@ -5,8 +5,10 @@ import com.awakenedredstone.cubecontroller.util.MessageUtils;
 import com.awakenedredstone.cubecontroller.util.PacketUtils;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.nbt.AbstractNbtNumber;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -39,15 +41,33 @@ public class GameControl {
         this.nbtData = nbt;
     }
 
+    public boolean isWithinLimit(double value) {
+        return switch (getNbt().get("limit")) {
+            case NbtCompound limit -> value >= limit.getDouble("min") && value <= limit.getDouble("max");
+            case AbstractNbtNumber limit -> value <= limit.doubleValue();
+            case null -> true;
+            default -> true;
+        };
+    }
+
+    public double withinLimit(double value) {
+        return switch (getNbt().get("limit")) {
+            case NbtCompound limit -> MathHelper.clamp(value, limit.getDouble("min"), limit.getDouble("max"));
+            case AbstractNbtNumber limit -> Math.min(value, limit.doubleValue());
+            case null -> value;
+            default -> value;
+        };
+    }
+
     public double value() {
         return value;
     }
 
     public void value(double value) {
         if (!valueBased) return;
-        this.value = value;
+        this.value = withinLimit(value);
         if (CubeController.getServer() != null) {
-            if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+            if (isVisible()) {
                 MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
             }
         }
@@ -60,7 +80,7 @@ public class GameControl {
     public void enabled(boolean enabled) {
         this.enabled = enabled;
         if (CubeController.getServer() != null) {
-            if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+            if (isVisible()) {
                 MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
             } else {
                 MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
@@ -78,7 +98,7 @@ public class GameControl {
     }
 
     public boolean hasEvent() {
-        return event == CubeControllerEvents.NONE;
+        return event != CubeControllerEvents.NONE;
     }
 
     public boolean valueBased() {
@@ -92,10 +112,10 @@ public class GameControl {
     public void setNbt(NbtCompound nbt) {
         nbtData = nbt;
         if (CubeController.getServer() != null) {
-            if (nbtData.getBoolean("hideInfo") || (!nbt.getBoolean("alwaysVisible") && !enabled)) {
-                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
-            } else if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+            if (isVisible()) {
                 MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            } else {
+                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
             }
         }
     }
@@ -103,17 +123,21 @@ public class GameControl {
     public void copyNbt(NbtCompound nbt) {
         nbtData.copyFrom(nbt);
         if (CubeController.getServer() != null) {
-            if (nbtData.getBoolean("hideInfo") || (!nbt.getBoolean("alwaysVisible") && !enabled)) {
-                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
-            } else if ((enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo")) {
+            if (isVisible()) {
                 MessageUtils.broadcastPacket(CubeController.identifier("info_update"), PacketUtils.controlInfoUpdate(PacketByteBufs.create(), this));
+            } else {
+                MessageUtils.broadcastPacket(CubeController.identifier("remove_info"), PacketByteBufs.create().writeIdentifier(identifier()));
             }
         }
     }
 
     public boolean invoke() {
-        if (enabled) event.invoker().invoke(this);
-        return enabled;
+        if (enabled && hasEvent()) event.invoker().invoke(this);
+        return enabled && hasEvent();
+    }
+
+    private boolean isVisible() {
+        return (enabled || nbtData.getBoolean("alwaysVisible")) && !nbtData.getBoolean("hideInfo");
     }
 
     @Override

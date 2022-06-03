@@ -19,7 +19,8 @@
     ],
     "main": [
       "com.awakenedredstone.cubecontroller.CubeController"
-    ]
+    ],
+    "modmenu": [ "com.awakenedredstone.cubecontroller.config.ModMenuIntegration" ]
   },
   "mixins": [
     "cubecontroller.mixins.json"
@@ -27,6 +28,11 @@
   "depends": {
     "fabricloader": ">=0.13.3",
     "fabric": "*",
-    "minecraft": "1.18.2"
+    "minecraft": ">=1.19-beta.4"
+  },
+  "custom": {
+    "modmenu": {
+      "badges": [ "library" ]
+    }
   }
 }

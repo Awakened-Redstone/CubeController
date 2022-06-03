@@ -3,6 +3,7 @@
   "commands.cubecontroller.error.doesNotHaveEvent": "%s does not have an event",
   "commands.cubecontroller.error.notValueBased": "%s is not value based",
   "commands.cubecontroller.error.nothingChanged": "%s data was not changed",
+  "commands.cubecontroller.error.limit": "%s has a limit of %s",
   "commands.cubecontroller.set.enabled": "%s is now %s",
   "commands.cubecontroller.set.value": "%s value has been set to %s",
   "commands.cubecontroller.set.nbtData": "%s data has been modified.",
@@ -29,5 +30,7 @@
   "cubecontroller.potion_chaos": "Potion chaos",
   "cubecontroller.inventory_shuffle": "Inventory shuffle",
   "cubecontroller.rotate_player": "Rotate player",
-  "cubecontroller.floating_items": "Floating items"
+  "cubecontroller.floating_items": "Floating items",
+  "cubecontroller.sculk_spread_chaos": "Sculk spread chaos",
+  "cubecontroller.laggy.sculk_charge_no_limit": "Disable sculk charge limit"
 }

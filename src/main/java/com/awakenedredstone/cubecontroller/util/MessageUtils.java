@@ -8,10 +8,9 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.BaseText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
@@ -25,12 +24,12 @@ import static com.awakenedredstone.cubecontroller.CubeController.LOGGER;
 
 public class MessageUtils {
 
-    public static void sendError(BaseText message) {
+    public static void sendError(MutableText message) {
         LOGGER.error(message.getString());
         if (CubeController.getServer() != null) CubeController.getServer().getCommandSource().sendFeedback(message.formatted(Formatting.RED), true);
     }
 
-    public static void sendError(BaseText message, Throwable throwable) {
+    public static void sendError(MutableText message, Throwable throwable) {
         LOGGER.error(message.getString(), throwable);
         if (CubeController.getServer() != null) CubeController.getServer().getCommandSource().sendFeedback(message.formatted(Formatting.RED), true);
     }
@@ -84,6 +83,6 @@ public class MessageUtils {
     }
 
     private static Text broadcastError(Identifier identifier) {
-        return new TranslatableText("text.cubecontroller.error.broadcast", identifier).formatted(Formatting.RED);
+        return Text.translatable("text.cubecontroller.error.broadcast", identifier).formatted(Formatting.RED);
     }
 }
