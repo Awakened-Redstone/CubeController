@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.nbt.AbstractNbtNumber;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.NotNull;
@@ -42,21 +43,29 @@ public class GameControl {
     }
 
     public boolean isWithinLimit(double value) {
-        return switch (getNbt().get("limit")) {
-            case NbtCompound limit -> value >= limit.getDouble("min") && value <= limit.getDouble("max");
-            case AbstractNbtNumber limit -> value <= limit.doubleValue();
-            case null -> true;
-            default -> true;
-        };
+        NbtElement nbtElement = getNbt().get("limit");
+        if (nbtElement instanceof NbtCompound limit) {
+            return value >= limit.getDouble("min") && value <= limit.getDouble("max");
+        } else if (nbtElement instanceof AbstractNbtNumber limit) {
+            return value <= limit.doubleValue();
+        } else if (nbtElement == null) {
+            return true;
+        } else {
+            return true;
+        }
     }
 
     public double withinLimit(double value) {
-        return switch (getNbt().get("limit")) {
-            case NbtCompound limit -> MathHelper.clamp(value, limit.getDouble("min"), limit.getDouble("max"));
-            case AbstractNbtNumber limit -> Math.min(value, limit.doubleValue());
-            case null -> value;
-            default -> value;
-        };
+        NbtElement nbtElement = getNbt().get("limit");
+        if (nbtElement instanceof NbtCompound limit) {
+            return MathHelper.clamp(value, limit.getDouble("min"), limit.getDouble("max"));
+        } else if (nbtElement instanceof AbstractNbtNumber limit) {
+            return Math.min(value, limit.doubleValue());
+        } else if (nbtElement == null) {
+            return value;
+        } else {
+            return value;
+        }
     }
 
     public double value() {

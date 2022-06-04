@@ -4,6 +4,7 @@
   "commands.cubecontroller.error.notValueBased": "%s is not value based",
   "commands.cubecontroller.error.nothingChanged": "%s data was not changed",
   "commands.cubecontroller.error.limit": "%s has a limit of %s",
+  "commands.cubecontroller.error.limit.bounds": "%s is limited from %s to %s",
   "commands.cubecontroller.set.enabled": "%s is now %s",
   "commands.cubecontroller.set.value": "%s value has been set to %s",
   "commands.cubecontroller.set.nbtData": "%s data has been modified.",

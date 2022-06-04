@@ -13,7 +13,9 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.command.StorageDataObject;
 import net.minecraft.command.argument.NbtCompoundArgumentType;
+import net.minecraft.nbt.AbstractNbtNumber;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.DataCommand;
@@ -105,8 +107,13 @@ public class GameControlCommand {
     public static int executeSetValue(ServerCommandSource source, GameControl control, double value) throws CommandSyntaxException {
         if (!control.valueBased()) {
             throw createCommandException("commands.cubecontroller.error.notValueBased", control);
-        } else if (control.isWithinLimit(value)) {
-            throw createCommandException("commands.cubecontroller.error.limit", control, control.getNbt().getDouble("limit"));
+        } else if (!control.isWithinLimit(value)) {
+            NbtElement limit = control.getNbt().get("limit");
+            if (limit instanceof NbtCompound compound) {
+                throw createCommandException("commands.cubecontroller.error.limit.bounds", control, compound.getDouble("min"), compound.getDouble("max"));
+            } else if (limit instanceof AbstractNbtNumber number) {
+                throw createCommandException("commands.cubecontroller.error.limit", control, number.doubleValue());
+            }
         }
         control.value(value);
         sendFeedback(source, "commands.cubecontroller.set.value", control, true, value);

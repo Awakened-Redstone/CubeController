@@ -81,10 +81,11 @@ public class CubeController implements ModInitializer {
         registerControl(identifier("rotate_player"));
         registerControl(identifier("sculk_spread_chaos"), SCULK_CHAOS, true, NbtBuilder.create()
                 .addCompound("limit", NbtBuilder.create().addDouble("min", 0).addDouble("max", 32000).build())
+                .build());
+        registerControl(identifier("laggy/sculk_charge_no_limit"), null, false, NbtBuilder.create()
                 .addBoolean("noCursorCap", true)
                 .addBoolean("noChargeCap", false)
                 .build());
-        registerControl(identifier("laggy/sculk_charge_no_limit"), null, false);
         registerPacketHandlers();
         registerListeners();
     }
