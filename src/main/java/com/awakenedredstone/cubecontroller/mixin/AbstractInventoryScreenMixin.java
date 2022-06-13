@@ -18,11 +18,11 @@ public class AbstractInventoryScreenMixin {
     @Inject(method = "getStatusEffectDescription(Lnet/minecraft/entity/effect/StatusEffectInstance;)Lnet/minecraft/text/Text;", at = @At("RETURN"), cancellable = true)
     private void getStatusEffectDescription(StatusEffectInstance statusEffect, CallbackInfoReturnable<Text> cir) {
         if (statusEffect.getAmplifier() < 0) {
-            MutableText mutableText = cir.getReturnValue().shallowCopy();
+            MutableText mutableText = cir.getReturnValue().copy();
             mutableText.append(" ").append("??");
             cir.setReturnValue(mutableText);
         } else if (statusEffect.getAmplifier() > 9) {
-            MutableText mutableText = cir.getReturnValue().shallowCopy();
+            MutableText mutableText = cir.getReturnValue().copy();
             mutableText.append(" ").append(String.valueOf(statusEffect.getAmplifier() + 1));
             cir.setReturnValue(mutableText);
         }

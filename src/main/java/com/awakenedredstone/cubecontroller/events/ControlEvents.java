@@ -15,4 +15,10 @@ public interface ControlEvents extends CubeControllerEvents {
             event.invoke(control);
         }
     });
+
+    Event<CubeControllerEvents> SCULK_CHAOS = EventFactory.createArrayBacked(CubeControllerEvents.class, (listeners) -> control -> {
+        for (CubeControllerEvents event : listeners) {
+            event.invoke(control);
+        }
+    });
 }

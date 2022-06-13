@@ -13,12 +13,14 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.minecraft.command.StorageDataObject;
 import net.minecraft.command.argument.NbtCompoundArgumentType;
+import net.minecraft.nbt.AbstractNbtNumber;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.DataCommand;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,18 +95,25 @@ public class GameControlCommand {
 
     public static int executeSetEnabled(ServerCommandSource source, GameControl control, boolean enabled) {
         control.enabled(enabled);
-        sendFeedback(source, "commands.cubecontroller.set.enabled", control, true, new TranslatableText("text.cubecontroller.enabled." + enabled));
+        sendFeedback(source, "commands.cubecontroller.set.enabled", control, true, Text.translatable("text.cubecontroller.enabled." + enabled));
         return 1;
     }
 
     public static int executeGetEnabled(ServerCommandSource source, GameControl control) {
-        sendFeedback(source, "commands.cubecontroller.get.enabled", control, false, new TranslatableText("text.cubecontroller.enabled." + control.enabled()));
+        sendFeedback(source, "commands.cubecontroller.get.enabled", control, false, Text.translatable("text.cubecontroller.enabled." + control.enabled()));
         return control.enabled() ? 1 : 0;
     }
 
     public static int executeSetValue(ServerCommandSource source, GameControl control, double value) throws CommandSyntaxException {
         if (!control.valueBased()) {
             throw createCommandException("commands.cubecontroller.error.notValueBased", control);
+        } else if (!control.isWithinLimit(value)) {
+            NbtElement limit = control.getNbt().get("limit");
+            if (limit instanceof NbtCompound compound) {
+                throw createCommandException("commands.cubecontroller.error.limit.bounds", control, compound.getDouble("min"), compound.getDouble("max"));
+            } else if (limit instanceof AbstractNbtNumber number) {
+                throw createCommandException("commands.cubecontroller.error.limit", control, number.doubleValue());
+            }
         }
         control.value(value);
         sendFeedback(source, "commands.cubecontroller.set.value", control, true, value);
@@ -144,7 +153,7 @@ public class GameControlCommand {
     }
 
     public static int executeInvoke(ServerCommandSource source, GameControl control) throws CommandSyntaxException {
-        if (control.hasEvent()) throw createCommandException("commands.cubecontroller.error.doesNotHaveEvent", control);
+        if (!control.hasEvent()) throw createCommandException("commands.cubecontroller.error.doesNotHaveEvent", control);
 
         boolean success = control.invoke();
         if (success) sendFeedback(source, "commands.cubecontroller.invoke.success", control, true);
@@ -154,19 +163,19 @@ public class GameControlCommand {
     }
 
     private static void sendNbtFeedback(ServerCommandSource source, String key, GameControl control, boolean broadcastToOps, NbtCompound nbtCompound) {
-        source.sendFeedback(new TranslatableText(key, CubeController.getIdentifierTranslation(control.identifier()), NbtHelper.toPrettyPrintedText(nbtCompound)), broadcastToOps);
+        source.sendFeedback(Text.translatable(key, CubeController.getIdentifierTranslation(control.identifier()), NbtHelper.toPrettyPrintedText(nbtCompound)), broadcastToOps);
     }
 
     private static void sendFeedback(ServerCommandSource source, String key, GameControl control, boolean broadcastToOps, Object... arguments) {
         List<Object> args = new ArrayList<>(List.of(CubeController.getIdentifierTranslation(control.identifier())));
         args.addAll(List.of(arguments));
-        source.sendFeedback(new TranslatableText(key, args.toArray()), broadcastToOps);
+        source.sendFeedback(Text.translatable(key, args.toArray()), broadcastToOps);
     }
 
     private static CommandSyntaxException createCommandException(String key, GameControl control, Object... arguments) {
         List<Object> args = new ArrayList<>(List.of(CubeController.getIdentifierTranslation(control.identifier())));
         args.addAll(List.of(arguments));
-        return new SimpleCommandExceptionType(new TranslatableText(key, args.toArray())).create();
+        return new SimpleCommandExceptionType(Text.translatable(key, args.toArray())).create();
     }
 
     @FunctionalInterface

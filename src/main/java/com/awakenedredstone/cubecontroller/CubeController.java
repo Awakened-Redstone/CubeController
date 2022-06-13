@@ -1,35 +1,42 @@
 package com.awakenedredstone.cubecontroller;
 
 import com.awakenedredstone.cubecontroller.commands.GameControlCommand;
+import com.awakenedredstone.cubecontroller.commands.argument.RegistryEntryArgumentType;
 import com.awakenedredstone.cubecontroller.events.CubeControllerEvents;
 import com.awakenedredstone.cubecontroller.exceptions.GameControlException;
+import com.awakenedredstone.cubecontroller.mixin.ArgumentTypesAccessor;
 import com.awakenedredstone.cubecontroller.mixin.SimpleRegistryMixin;
 import com.awakenedredstone.cubecontroller.util.ConversionUtils;
-import com.awakenedredstone.cubecontroller.util.EasyNbtCompound;
 import com.awakenedredstone.cubecontroller.util.MessageUtils;
+import com.awakenedredstone.cubecontroller.util.NbtBuilder;
 import com.awakenedredstone.cubecontroller.util.PacketUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.block.entity.SculkSpreadManager;
+import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.argument.serialize.ConstantArgumentSerializer;
 import net.minecraft.datafixer.Schemas;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtByte;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
@@ -45,8 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import static com.awakenedredstone.cubecontroller.events.ControlEvents.POTION_CHAOS;
-import static com.awakenedredstone.cubecontroller.events.ControlEvents.SHUFFLE_INVENTORY;
+import static com.awakenedredstone.cubecontroller.events.ControlEvents.*;
 
 public class CubeController implements ModInitializer {
     public static final String MOD_ID = "cubecontroller";
@@ -56,6 +62,7 @@ public class CubeController implements ModInitializer {
 
     private static final PersistentStateManager persistentStateManager = new PersistentStateManager(getModDataDir().toFile(), Schemas.getFixer());
     private static final Set<StatusEffect> blacklistedPotions = new HashSet<>();
+    private static final SculkSpreadManager spreadManager = SculkSpreadManager.create();
 
     private static CubeData cubeData;
     private static ModPersistentData modData;
@@ -63,14 +70,22 @@ public class CubeController implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        registerControl(identifier("entity_jump"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
+        registerRegistryArgumentType(GAME_CONTROL);
+        registerControl(identifier("entity_jump"), NbtBuilder.create().addBoolean("playerOnly", true).build());
         registerControl(identifier("player_movement_speed"));
-        registerControl(identifier("entity_speed_attribute"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
-        registerControl(identifier("entity_health_attribute"), new EasyNbtCompound(Map.of("playerOnly", NbtByte.of(true))));
+        registerControl(identifier("entity_speed_attribute"), NbtBuilder.create().addBoolean("playerOnly", true).build());
+        registerControl(identifier("entity_health_attribute"), NbtBuilder.create().addBoolean("playerOnly", true).build());
         registerControl(identifier("potion_chaos"), POTION_CHAOS);
         registerControl(identifier("floating_items"), null, false);
-        registerControl(identifier("inventory_shuffle"), SHUFFLE_INVENTORY, true, new EasyNbtCompound(Map.of("shuffleEverything", NbtByte.of(false))));
+        registerControl(identifier("inventory_shuffle"), SHUFFLE_INVENTORY, true, NbtBuilder.create().addBoolean("shuffleEverything", false).build());
         registerControl(identifier("rotate_player"));
+        registerControl(identifier("sculk_spread_chaos"), SCULK_CHAOS, true, NbtBuilder.create()
+                .addCompound("limit", NbtBuilder.create().addDouble("min", 0).addDouble("max", 32000).build())
+                .build());
+        registerControl(identifier("laggy/sculk_charge_no_limit"), null, false, NbtBuilder.create()
+                .addBoolean("noCursorCap", true)
+                .addBoolean("noChargeCap", false)
+                .build());
         registerPacketHandlers();
         registerListeners();
     }
@@ -114,6 +129,14 @@ public class CubeController implements ModInitializer {
         Registry.register(GAME_CONTROL, control.identifier(), control);
     }
 
+    public static void registerRegistryArgumentType(Registry<?> registry) {
+        ConstantArgumentSerializer<? extends RegistryEntryArgumentType<?>> serializer = ConstantArgumentSerializer.of(() -> RegistryEntryArgumentType.registry(registry));
+        Identifier identifier = identifier("registry/" + registry.getKey().getRegistry().getPath());
+        //ArgumentTypeRegistry.registerArgumentType(identifier, RegistryEntryArgumentType.class, serializer);
+        ArgumentTypesAccessor.fabric_getClassMap().put(RegistryEntryArgumentType.class, serializer);
+        Registry.register(Registry.COMMAND_ARGUMENT_TYPE, identifier, serializer);
+    }
+
     /**
      * <p>Generates a Translatable text with the key on the format
      * {@code <namespace>.<path>} with any {@code /} on path being replaced with {@code .}<br/>
@@ -121,10 +144,10 @@ public class CubeController implements ModInitializer {
      * {@code minecraft:chests/stronghold_library} -> {@code minecraft.chests.stronghold_library}
      *
      * @param identifier The {@link Identifier}
-     * @return a {@link TranslatableText} with the key on the format {@code <namespace>.<path>}
+     * @return a {@link MutableText} with the key on the format {@code <namespace>.<path>}
      */
-    public static TranslatableText getIdentifierTranslation(Identifier identifier) {
-        return new TranslatableText(String.format("%s.%s", identifier.getNamespace(), identifier.getPath().replaceAll("/", ".")));
+    public static MutableText getIdentifierTranslation(Identifier identifier) {
+        return Text.translatable(String.format("%s.%s", identifier.getNamespace(), identifier.getPath().replaceAll("/", ".")));
     }
 
     public static MinecraftServer getServer() {
@@ -169,7 +192,7 @@ public class CubeController implements ModInitializer {
         return modDataDir;
     }
 
-    private void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
+    private void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
         GameControlCommand.register(dispatcher);
     }
 
@@ -207,7 +230,7 @@ public class CubeController implements ModInitializer {
         SHUFFLE_INVENTORY.register(control ->
                 MessageUtils.broadcast(player -> {
                     PlayerInventory inventory = player.getInventory();
-                    Random random = player.getRandom();
+                    net.minecraft.util.math.random.Random random = player.getRandom();
                     int size = control.getNbt().getBoolean("shuffleEverything") ? inventory.size() : inventory.main.size();
 
                     for (int i = 0; i < size; i++) {
@@ -245,7 +268,7 @@ public class CubeController implements ModInitializer {
                     Optional<RegistryEntry<StatusEffect>> randomPotion;
                     StatusEffect effect;
                     do {
-                        randomPotion = Registry.STATUS_EFFECT.getRandom(random);
+                        randomPotion = Registry.STATUS_EFFECT.getRandom(net.minecraft.util.math.random.Random.create());
                         effect = randomPotion.isPresent() ? randomPotion.get().value() : StatusEffects.SLOWNESS;
                     } while (blacklistedPotions.contains(effect));
                     if (player.hasStatusEffect(effect)) {
@@ -255,7 +278,21 @@ public class CubeController implements ModInitializer {
                         player.removeStatusEffect(playerEffect.getEffectType());
                     }
                     player.addStatusEffect(new StatusEffectInstance(effect, duration, amplifier, false, false, true));
-                }, identifier("broadcast/potion_chaos"))
+                }, identifier("control/apply_potion_chaos"))
         );
+
+        SCULK_CHAOS.register(control -> {
+            MessageUtils.broadcast(player -> {
+                spreadManager.spread(player.getBlockPos(), ConversionUtils.toInt(control.value()));
+            }, identifier("control/apply_sculk_spread_chaos"));
+        });
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (getControlSafe(identifier("sculk_spread_chaos")).enabled()) {
+                MessageUtils.broadcast(player -> {
+                    spreadManager.tick(player.getWorld(), player.getBlockPos(), server.getOverworld().getRandom(), true);
+                }, identifier("control/tick_sculk_spread_chaos"));
+            }
+        });
     }
 }
